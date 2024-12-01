@@ -1,0 +1,691 @@
+---
+title: "Breast Cancer"
+author: "Kelompok 7"
+date: "2023-06-06"
+output: html_document
+---
+
+# 1. Call library and attach dataset
+
+```{r}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(Hmisc)
+library(dlookr)
+```
+
+```{r}
+df <- read.csv("Breast_Cancer.csv",header=TRUE,sep=";")
+attach(df)
+```
+
+# 2. Exploratory Data Analysis : First Look
+
+```{r}
+dim(df)
+```
+
+```{r}
+str(df)
+```
+
+## Check missing values and remove from our data
+
+```{r}
+colSums(is.na(df))
+```
+
+```{r}
+df <- na.omit(df)
+```
+
+```{r}
+BasicSummary <- function(df, dgts = 3){
+m <- ncol(df)
+varNames <- colnames(df)
+varType <- vector("character",m)
+topLevel <- vector("character",m)
+topCount <- vector("numeric",m)
+missCount <- vector("numeric",m)
+levels <- vector("numeric", m)
+for (i in 1:m){
+x <- df[,i]
+varType[i] <- class(x)
+xtab <- table(x, useNA = "ifany")
+levels[i] <- length(xtab)
+nums <- as.numeric(xtab)
+maxnum <- max(nums)
+topCount[i] <- maxnum
+maxIndex <- which.max(nums)
+lvls <- names(xtab)
+topLevel[i] <- lvls[maxIndex]
+missIndex <- which((is.na(x)) | (x == "") | (x == " "))
+missCount[i] <- length(missIndex)
+}
+n <- nrow(df)
+topFrac <- round(topCount/n, digits = dgts)
+missFrac <- round(missCount/n, digits = dgts)
+summaryFrame <- data.frame(variable = varNames, type = varType,
+levels = levels, topLevel = topLevel,
+topCount = topCount, topFrac = topFrac,
+missFreq = missCount, missFrac = missFrac)
+return(summaryFrame)
+}
+```
+
+```{r}
+BasicSummary(df)
+```
+
+## Change the data type of all character variables into factor
+
+```{r}
+df$Race <- as.factor(df$Race)
+df$Marital.Status <- as.factor(df$Marital.Status)
+df$T.Stage <- as.factor(df$T.Stage)
+df$N.Stage <- as.factor(df$N.Stage)
+df$X6th.Stage <- as.factor(df$X6th.Stage)
+df$differentiate <- as.factor(df$differentiate)
+df$Grade <- as.factor(df$Grade)
+df$A.Stage <- as.factor(df$A.Stage)
+df$Estrogen.Status <- as.factor(df$Estrogen.Status)
+df$Progesterone.Status <- as.factor(df$Progesterone.Status)
+df$Status <- as.factor(df$Status)
+```
+
+## Provide Descriptive Statistics for each variable
+
+```{r}
+summary(df)
+```
+
+```{r}
+head(df)
+```
+
+## Exploratory Visualization
+
+```{r}
+plot(df)
+```
+
+### a. Univariate Analysis
+
+### Things to discover in EDA : central tendency, spread
+
+```{r}
+# Central Tendency for continuous variables
+boxplot(df$Age,main="Age")
+boxplot(df$Tumor.Size,main="Tumor Size")
+boxplot(df$Regional.Node.Examined,main="Regional Node Examined")
+boxplot(df$Reginol.Node.Positive,main="Regional Node Positive")
+boxplot(df$Survival.Months,main="Survival Months")
+```
+
+```{r}
+# Spread with histogram (Distibution for continuous variables)
+hist(df$Age,main="Age")
+hist(df$Tumor.Size,main="Tumor Size")
+hist(df$Regional.Node.Examined,main="Regional Node Examined")
+hist(df$Reginol.Node.Positive,main="Regional Node Positive")
+hist(df$Survival.Months,main="Survival Months")
+```
+
+```{r}
+#density (from histogram)
+plot(density(df$Age),main="Age Density Spread")
+plot(density(df$Tumor.Size),main="Tumor Size Density Spread")
+plot(density(df$Regional.Node.Examined),main="Regional Node Examined Density Spread")
+plot(density(df$Reginol.Node.Positive),main="Regional Node Positive Density Spread")
+plot(density(df$Survival.Months),main="Survival Months Density Spread")
+```
+
+### Plot for discrete variables using barplot to find count values
+
+```{r}
+plot(df$Race,main="Race")
+plot(df$Marital.Status,main="Marital Status")
+plot(df$T.Stage,main="T Stage")
+plot(df$N.Stage,main="N Stage")
+plot(df$X6th.Stage,main="X6th Stage")
+plot(df$differentiate,main="Differentiate")
+plot(df$Grade,main="Grade")
+plot(df$A.Stage,main="A Stage")
+plot(df$Estrogen.Status,main="Estrogen Status")
+plot(df$Progesterone.Status,main="Progesterone Status")
+plot(df$Status,main="Status")
+```
+
+## Distribution for numerical column
+
+```{r}
+numeric_column <- select(df,where(is.numeric))
+hist(numeric_column)
+```
+
+### b. Bivariate analysis
+
+### We will compare with all categorical variables with status. For categorical with categorical we make contingency table
+
+```{r}
+contingency_table1 <- table(df$Grade, df$Status)
+contingency_table2 <- table(df$Marital.Status, df$Status)
+contingency_table3 <- table(df$T.Stage, df$Status)
+contingency_table4 <- table(df$N.Stage, df$Status)
+contingency_table5 <- table(df$X6th.Stage, df$Status)
+contingency_table6 <- table(df$differentiate, df$Status)
+contingency_table7 <- table(df$Grade, df$Status)
+contingency_table8 <- table(df$A.Stage, df$Status)
+contingency_table9 <- table(df$Estrogen.Status, df$Status)
+contingency_table10 <- table(df$Progesterone.Status, df$Status)
+
+contingency_table1
+contingency_table2
+contingency_table3
+contingency_table4
+contingency_table5
+contingency_table6
+contingency_table7
+contingency_table8
+contingency_table9
+contingency_table10
+```
+
+## Barplot with all variables with patient's status not survived (dead)
+
+```{r}
+Filter2 <- filter(df,Status == "Dead")
+plot(Filter2$Grade, main="Level of cancer grades for patients who did not survived from cancer")
+plot(Filter2$Marital.Status, main="Marital Status for patients who did not survived from cancer")
+plot(Filter2$T.Stage, main="Level of T Stage for patients who did not survived from cancer")
+plot(Filter2$N.Stage, main="Level of N Stage for patients who did not survived from cancer")
+plot(Filter2$X6th.Stage, main="Level of X6th Stage for patients who did not survived from cancer")
+plot(Filter2$differentiate, main="Cancer differentiation grades for patients who did not survived from cancer")
+plot(Filter2$A.Stage, main="Level of A Stage for patients who did not survived from cancer")
+plot(Filter2$Estrogen.Status, main="Estrogen Status for patients who did not survived from cancer")
+plot(Filter2$Progesterone.Status, main="Progesterone Status for patients who did not survived from cancer")
+```
+
+## Barplot with all variables with patient's status survived (alive)
+
+```{r}
+Filter1 <- filter(df,Status == "Alive")
+plot(Filter1$Grade, main="Level of cancer grades for patients who survived from cancer")
+plot(Filter1$Marital.Status, main="Marital Status for patients who survived from cancer")
+plot(Filter1$T.Stage, main="Level of T Stage for patients who survived from cancer")
+plot(Filter1$N.Stage, main="Level of N Stage for patients who survived from cancer")
+plot(Filter1$X6th.Stage, main="Level of X6th Stage for patients who survived from cancer")
+plot(Filter1$differentiate, main="Cancer differentiation grades for patients who survived from cancer")
+plot(Filter1$A.Stage, main="Level of A Stage for patients who survived from cancer")
+plot(Filter1$Estrogen.Status, main="Estrogen Status for patients who survived from cancer")
+plot(Filter1$Progesterone.Status, main="Progesterone Status for patients who survived from cancer")
+```
+
+### We will compare continuous variables with another discrete variables
+
+### Group patients by age to find which age has the most survived and not survived patients
+
+```{r}
+df_group= df %>% group_by(Age)  %>%
+          summarise(Survived = sum(Status == 'Alive'),
+          Not_survived = sum(Status == 'Dead'),
+          .groups = 'drop')
+```
+
+```{r}
+df_group
+```
+
+```{r}
+summary(df_group)
+```
+
+### Information : Based on the results above, the maximum number of women who survived breast cancer reached 143 people at the age of 47 years and at most did not survive as many as 33 people at the age of 69 years
+
+### Discrete and Continuous
+
+```{r}
+boxplot(Age ~ Status,data=df,main="Boxplot with Age and Status")
+boxplot(Survival.Months ~ Estrogen.Status,data=df,main="Boxplot with Surival Months and Estrogen Status")
+boxplot(Survival.Months ~ Progesterone.Status,data=df,main="Boxplot with Surival Months and Progesterone Status")
+boxplot(Survival.Months ~ Marital.Status,main="Boxplot with Surival Months and Marital Status")
+boxplot(Survival.Months ~ Race,main="Boxplot with Surival Months and Race")
+boxplot(Survival.Months ~ Status,main="Boxplot with Surival Months and Status")
+boxplot(Tumor.Size ~ T.Stage,main="Boxplot with Tumor Size and T Stage")
+boxplot(Reginol.Node.Positive ~ N.Stage,main="Boxplot with Regional Node Positive and N Stage")
+```
+
+### We compare two continuous variables
+
+```{r}
+plot(Age ~ Tumor.Size,data=df,main="Scatterplot between Age and Tumor Size")
+plot(Survival.Months ~ Age,data=df,main="Scatterplot between Survival Months and Age")
+plot(Reginol.Node.Positive ~ Age,data=df,main="Scatterplot between Regional Node Positive and Age")
+plot(Reginol.Node.Positive ~ Regional.Node.Examined,data=df,main="Scatterplot between Regional Node Positive and Regional Node Examined")
+```
+
+### In our plotting above there is not much correlation between continuous variables
+
+### Compare the density between discrete and continuous variables
+
+```{r}
+library(sm)
+
+```
+
+## Density Dicrete and Continuous
+
+```{r}
+comp <- sm.density.compare(df$Survival.Months,df$Status)
+legend("topleft", comp$levels, col = comp$col, lty = comp$lty, lwd = comp$lwd)
+
+comp2 <- sm.density.compare(df$Tumor.Size,df$Status)
+legend("topleft", comp2$levels, col = comp2$col, lty = comp2$lty, lwd = comp2$lwd)
+
+comp3 <- sm.density.compare(df$Survival.Months,df$T.Stage)
+legend("topleft", comp3$levels, col = comp3$col, lty = comp3$lty, lwd = comp3$lwd)
+
+comp4 <- sm.density.compare(df$Survival.Months,df$differentiate)
+legend("topleft", comp4$levels, col = comp4$col, lty = comp4$lty, lwd = comp4$lwd)
+
+comp5 <- sm.density.compare(df$Survival.Months,df$Race)
+legend("topleft", comp5$levels, col = comp5$col, lty = comp5$lty, lwd = comp5$lwd)
+
+comp6 <- sm.density.compare(df$Survival.Months,df$Estrogen.Status)
+legend("topleft", comp6$levels, col = comp6$col, lty = comp6$lty, lwd = comp6$lwd)
+
+comp6 <- sm.density.compare(df$Survival.Months,df$Progesterone.Status)
+legend("topleft", comp6$levels, col = comp6$col, lty = comp6$lty, lwd = comp6$lwd)
+```
+
+### Find the correlation between numerical variables
+
+```{r}
+df$Status <- as.character(df$Status)
+
+df$Status[df$Status=="Alive"] <- "1"
+df$Status[df$Status=="Dead"] <- "0"
+
+df$Status <- as.numeric(df$Status)
+```
+
+```{r}
+numeric_column2 <- select(df,where(is.numeric))
+```
+
+```{r}
+matrix2 <- cor(numeric_column2)
+print(matrix2)
+```
+
+```{r}
+library(corrplot)
+library(ggcorrplot)
+```
+
+```{r}
+ggcorrplot(matrix2,hc.order = TRUE,type="lower", lab = TRUE,lab_size=5)
+```
+
+### Information in correlation plot: Based on our correlation plot above we know that only survival months has a correlation with status but it is also not much only 0.47
+
+## c. Multivariate Analysis
+
+### Scatterplot for 3 or more variables
+
+```{r}
+ggplot(df, aes(Tumor.Size, Survival.Months, colour = as.factor(Status) )) + geom_point()
+ggplot(df, aes(Tumor.Size, Survival.Months, colour = as.factor(Status) )) + geom_point() + facet_wrap(~ T.Stage)
+ggplot(df, aes(Reginol.Node.Positive, Regional.Node.Examined, colour = as.factor(Status) )) + geom_point() + facet_wrap(~ N.Stage)
+ggplot(df, aes(Tumor.Size, Age, colour = as.factor(Estrogen.Status) )) + geom_point() + facet_grid(N.Stage ~ T.Stage)
+ggplot(df, aes(Tumor.Size, Age, colour = as.factor(Progesterone.Status) )) + geom_point() + facet_grid(N.Stage ~ T.Stage)
+```
+
+### Barplot for 3 variables
+
+```{r}
+ggplot(df, aes(factor(differentiate), Survival.Months, fill = interaction(Status))) + 
+        geom_bar(stat = "identity", width = 0.5, position = "dodge") +
+        labs(list(x = "x", y = "count",fill = "group"))
+ggplot(df, aes(factor(N.Stage), Reginol.Node.Positive, fill = interaction(Status))) + 
+        geom_bar(stat = "identity", width = 0.5, position = "dodge") +
+        labs(list(x = "x", y = "count",fill = "group"))
+ggplot(df, aes(factor(Grade), Survival.Months, fill = interaction(Status))) + 
+        geom_bar(stat = "identity", width = 0.5, position = "dodge") +
+        labs(list(x = "x", y = "count",fill = "group"))
+ggplot(df, aes(factor(X6th.Stage), Survival.Months, fill = interaction(Status))) + 
+        geom_bar(stat = "identity", width = 0.5, position = "dodge") +
+        labs(list(x = "x", y = "count",fill = "group"))
+```
+
+### Information : Based on the barchart between N Stage and Regional Node Positive, Patient with level of N stage N3 have a highest dead record
+
+# 3. Exploratory Data Analysis : Second Look
+
+## a. Function for Binomial Confidence interval
+
+```{r}
+
+binCIplot <- function(n1Vector, nVector, cLevel = 0.95,
+output = FALSE, pchEst = 16,
+pchLo = 2, pchHi = 6, yLims = NULL, ...){
+#
+library(PropCIs)
+nPts <- length(n1Vector)
+pFrame <- NULL
+for (i in 1:nPts){
+  estSum <- addz2ci(n1Vector[i], nVector[i], cLevel)
+  upFrame <- data.frame(n1 = n1Vector[i], n = nVector[i],
+  est = estSum$estimate,
+  loCI = estSum$conf.int[1],
+  upCI = estSum$conf.int[2])
+  pFrame <- rbind.data.frame(pFrame, upFrame)
+}
+#
+if (output){
+  return(pFrame)
+  }
+}
+
+```
+
+### Now we will make a contigency table (cTable) and plot a cancer stage in our data which is T stage and N stage with Status.
+
+```{r}
+nVector <- table(df$T.Stage)
+cTable <- table(df$T.Stage, df$Status)
+n1Vector <- cTable[, 1]
+pHat <- n1Vector/nVector
+
+cTable
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(pHat, las = 2, ylab= "Tumor Stage", main = "Tumor Stage default scaling")
+plot(pHat, las = 2, ylab= "Tumor Stage",ylim = c(0,1), main = "Tumor Stage full range scaling")
+```
+
+```{r}
+pFrame <- binCIplot(n1Vector, nVector, output = TRUE)
+#text(seq(1,13,1), 0.4, names(nVector), srt = 90, adj = 0)
+pFrame
+```
+
+### Based on the plot above we can see that T4 (size and extent of the main tumor stage 4) has the highest dead rate for our data. But as we can see in cTable that we just have 100 records of T4 which is very small comparing with the other stage. Because of that, the confidence interval is relatively wide and the wider the confidence interval indicates that there is more uncertainty or variability in the estimate. But at the estimation we can estimate 39% of population, but we cannot said it is good enough to draw the conclusion about accuracy of the estimation
+
+```{r}
+nVector1 <- table(df$N.Stage)
+cTable1 <- table(df$N.Stage, df$Status)
+n1Vector1 <- cTable1[, 1]
+pHat1 <- n1Vector1/nVector1
+
+cTable1
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(pHat1, las = 2, ylab= "Tumor Stage", main = "N Stage default scaling")
+plot(pHat1, las = 2, ylab= "Tumor Stage",ylim = c(0,1), main = "N Stage full range scaling")
+```
+
+```{r}
+pFrame2 <- binCIplot(n1Vector1, nVector1, output = TRUE)
+#text(seq(1,13,1), 0.4, names(nVector), srt = 90, adj = 0)
+pFrame2
+```
+
+### On N stage plotting, based on the plot above we can see that N3 (number of nearby lymph nodes that have cancer stage 3) has the highest dead rate for our data. But as we can see in cTable1 that we just have 467 records of N3 which is a little small comparing with the other stage. Because of that, the confidence interval is relatively wide and the wider the confidence interval indicates that there is more uncertainty or variability in the estimate. But at the estimation we can estimate 38% of population, but we cannot said it is good enough to draw the conclusion about accuracy of the estimation
+
+## b. Odds Ratio (OR) is a measure of association between two categorical variables
+
+```{r}
+table(df$T.Stage,df$Status)
+```
+
+### Odds Ratio Function
+
+```{r}
+ORproc <- function(tbl, cLevel = 0.95){
+#
+n11 <- tbl[1,1]
+n12 <- tbl[1,2]
+n21 <- tbl[2,1]
+n22 <- tbl[2,2]
+#
+OR <- (n11/n12) * (n22/n21)
+#
+sigmaLog <- sqrt(1/n11 + 1/n12 + 1/n21 + 1/n22)
+alpha <- 1 - cLevel
+zalpha2 <- qnorm(1 - alpha/2)
+logOR <- log(OR)
+logLo <- logOR - zalpha2 * sigmaLog
+logHi <- logOR + zalpha2 * sigmaLog
+loCI <- exp(logLo)
+upCI <- exp(logHi)
+#
+outFrame <- data.frame(OR = OR, confLevel = cLevel,
+loCI = loCI, upCI = upCI)
+return(outFrame)
+}
+
+```
+
+### In plotting before we know that N3 has the highest dead rate so we calculate odd ratio
+
+```{r}
+DeadCount <- as.numeric(df$Status == 0)
+Est_Status <- as.numeric(df$Estrogen.Status == "Positive")
+cTable <- table(DeadCount, Est_Status)
+cTable
+ORproc(cTable)
+```
+
+### The point estimate of the odds ratio is less than 1, we can conclude that there is a negative association. The odds ratio estimate of 23.8% indicates that the odds of death are 76.2% lower in individuals with positive estrogen status compared to those with negative estrogen status. This means that patients with positive estrogen status have a lower risk of death than those with negative estrogen status.
+
+### And since the confidence interval does not include 1, we can conclude that there is a statistically significant association between estrogen status and the risk of death.
+
+# 4. Anomalies
+
+```{r}
+df$Status <- as.factor(df$Status)
+```
+
+## Using diagnose_numeric function outliers calculated using boxplot rule
+
+```{r}
+diagnose_numeric(df)
+```
+
+## Use boxplot rule to detect the anomalies between numerical variables
+
+Boxplot Rule: [Q1 - 1.5 \* IQR, Q3 + 1.5 \* IQR]
+
+```{r}
+outlers_in_tumorsize <- boxplot(df$Tumor.Size)$out 
+outlers_in_regionalnodeexamined <- boxplot(df$Regional.Node.Examined)$out 
+outlers_in_regionalnodepositive <- boxplot(df$Reginol.Node.Positive)$out 
+outlers_in_survivalmonths <- boxplot(df$Survival.Months)$out 
+
+total1 <- length(outlers_in_tumorsize)
+total2 <- length(outlers_in_regionalnodeexamined)
+total3 <- length(outlers_in_regionalnodepositive)
+total4 <- length(outlers_in_survivalmonths)
+```
+
+```{r}
+print(total)
+print(total1)
+print(total2)
+```
+
+# 5. Data Cleaning
+
+## We remove the data anomalies we detect earlier
+
+```{r}
+clean_df <- df
+clean_df <- clean_df[-which(clean_df$Tumor.Size %in% outlers_in_tumorsize),]
+clean_df <- clean_df[-which(clean_df$Regional.Node.Examined %in% outlers_in_regionalnodeexamined),]
+clean_df <- clean_df[-which(clean_df$Reginol.Node.Positive %in% outlers_in_regionalnodepositive),]
+clean_df <- clean_df[-which(clean_df$Survival.Months %in% outlers_in_survivalmonths),]
+clean_df$Status[clean_df$Status=="Alive"]<-"1"
+clean_df$Status[clean_df$Status=="Dead"]<-"0"
+```
+
+```{r}
+dim(clean_df)
+```
+
+```{r}
+prep_df <- clean_df
+```
+
+# 6. Splitting Data
+
+## We split the data with 70% as training data and 30% as validation data
+
+```{r}
+set.seed(123)
+n <- nrow(prep_df)
+train <- sample(n,round(0.7*n))
+traindata <- prep_df[train,]
+validationdata <- prep_df[-train,]
+```
+
+# 7. Make Model with Statistical Learning: Logistic Regression
+
+## We will make first model with all independent variables as predictor
+
+```{r}
+logistic1 <- glm(Status ~., data=traindata,family = "binomial")
+summary(logistic1)
+```
+
+## We will make model 2 : take independent variables that have relation with our dependent variables and variables that have three asterics
+
+```{r}
+logistic2 <- glm(Status ~ Age + Progesterone.Status + Regional.Node.Examined + Survival.Months, data=traindata,family = "binomial")
+summary(logistic2)
+```
+
+## Predict the accuracy of model using RUC, AUC, and confusion matrix
+
+```{r}
+logistics_prediction_1 <- predict(logistic1,newdata = validationdata, type="response")
+logistics_prediction_2 <- predict(logistic2,newdata = validationdata, type="response")
+```
+
+```{r}
+library(mlbench)
+library(pROC)
+library(MLmetrics)
+```
+
+## ROC curve Model 1
+
+```{r}
+ROCFull <- roc(validationdata$Status,logistics_prediction_1,plot=TRUE, print.auc= TRUE)
+ROCFull
+```
+
+## AUC Model 1
+
+```{r}
+AUC(logistics_prediction_1,validationdata$Status)
+```
+
+## Confusion Matrix Accuracy Model 1
+
+```{r}
+threshold <- table(validationdata$Status,logistics_prediction_1 > 0.5)
+accuracy <- round(sum(diag(threshold))/ sum(threshold),5)
+threshold
+sprintf("Accuracy is %s", accuracy)
+```
+
+## Confusion Matrix Accuracy Model 2
+
+```{r}
+threshold2 <- table(validationdata$Status,logistics_prediction_2 > 0.5)
+accuracy2 <- round(sum(diag(threshold2))/ sum(threshold2),5)
+threshold2
+sprintf("Accuracy is %s", accuracy2)
+```
+
+## Explanation : From the validation results regarding the accuracy for predictive modeling the 2nd model has slightly higher accuracy, therefore we should use the 2nd model which has 90.5% accuracy.
+
+# 8. Make Model with Machine Learning: Decision Trees
+
+```{r}
+library(rpart)
+library(rpart.plot)
+```
+
+## We will make model with all independent variables as predictor
+
+```{r}
+StatusModel1 <- rpart(formula = Status ~., data = traindata, method = "class")
+StatusModel1$variable.importance
+```
+
+## We will make model 2 : Take variables that have high importance
+
+```{r}
+StatusModel2 <- rpart(formula = Status ~ Survival.Months, data = traindata, method = "class")
+StatusModel2$variable.importance
+```
+
+```{r}
+rpart.plot(x = StatusModel1, yesno = 2, type = 0)
+```
+
+```{r}
+rpart.plot(x = StatusModel2, yesno = 2, type = 0)
+```
+
+## We will make model 2 with Survival Months because it has highest variable importance from any other variables.
+
+## Lastly we will calculate the accuracy and make confusion matrix for our model
+
+```{r}
+PredModel1 <- predict(StatusModel1, newdata = validationdata, type = "class")
+PredModel2 <- predict(StatusModel2, newdata = validationdata, type = "class")
+```
+
+## Prediction Result :
+
+```{r}
+cm <- table(PredModel1, validationdata$Status)
+accuracy <- sum(cm[1], cm[4]) / sum(cm[1:4])
+precision <- cm[4] / sum(cm[4], cm[2])
+sensitivity <- cm[4] / sum(cm[4], cm[3])
+fscore <- (2 * (sensitivity * precision)) / (sensitivity - precision)
+spesificity <- cm[1] / sum(cm[1], cm[2])
+print(cm)
+sprintf("Accuracy is %s",round(accuracy,5))
+```
+
+```{r}
+cm <- table(PredModel2, validationdata$Status)
+accuracy <- sum(cm[1], cm[4]) / sum(cm[1:4])
+precision <- cm[4] / sum(cm[4], cm[2])
+sensitivity <- cm[4] / sum(cm[4], cm[3])
+fscore <- (2 * (sensitivity * precision)) / (sensitivity - precision)
+spesificity <- cm[1] / sum(cm[1], cm[2])
+print(cm)
+sprintf("Accuracy is %s",round(accuracy,5))
+```
+
+# 9. Final Model
+
+Based on our modelling, we choose logistic regression as our statistical learning and decision trees as our machine learning for predictive model because our data is only contain two values which is 'alive' and 'dead', and later on changed to 1 and 0. Based on final model accuracy, we can say that our final model is fairly accurate with 91% accuracy.
+
+In final model, we will choose decision tree model 2 because it has the highest accuracy between our model in Logistic Regression and Decision Tree with 91% accuracy.
+
+Our final classification model is decision tree with Survival Months as predictor. Because our predictor is continuous so we will sort from lowest to highest value then we will take middle value from each two data to compute gini impurity. In our model, we will classify patients survival months: - If Survival months is less than 48, we will classify it as Yes: In this node we will have percentage of 0.34 status and 9% of patients is there - If Survival months is greater than or equal to 48 we classify it as No: In this node we will have percentage of 0.93 status and 91% of patients is there
+
+# 10. Conclusion
+
+Based on our analysis, there is very few independent variables that has a correlation with our dependent variables and on our plot above in exploratory data analysis there is some information that we can conclude from our plotting. Survival Months has highest relations with our dependent variable. So for our final model, we will use Decision Trees with Survival Months as our predictor to predict Status which has 91.2% accuracy which is pretty accurate.
